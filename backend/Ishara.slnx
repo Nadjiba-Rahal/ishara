@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Ishara.Api/Ishara.Api.csproj" />
+  <Project Path="Ishara.Application/Ishara.Application.csproj" />
+  <Project Path="Ishara.Domain/Ishara.Domain.csproj" />
+  <Project Path="Ishara.Infrastructure/Ishara.Infrastructure.csproj" />
+</Solution>

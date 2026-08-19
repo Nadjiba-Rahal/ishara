@@ -1,0 +1,24 @@
+{
+  "name": "@ishara/web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Next.js web client for ISHARA.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@react-three/fiber": "latest",
+    "next": "16.3.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "three": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}

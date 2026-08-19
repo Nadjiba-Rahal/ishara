@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: ishara-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ishara}
+      POSTGRES_USER: ${POSTGRES_USER:-ishara}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ishara_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ishara} -d ${POSTGRES_DB:-ishara}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Ishara.Api.Dockerfile
+    container_name: ishara-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-ishara};Username=${POSTGRES_USER:-ishara};Password=${POSTGRES_PASSWORD:-ishara_dev_password}
+    ports:
+      - "${API_PORT:-5090}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
