@@ -1,6 +1,16 @@
-@Ishara.Api_HostAddress = http://localhost:5281
+@Ishara.Api_HostAddress = http://localhost:5090
 
-GET {{Ishara.Api_HostAddress}}/weatherforecast/
+GET {{Ishara.Api_HostAddress}}/api/health/live
+Accept: application/json
+
+###
+
+GET {{Ishara.Api_HostAddress}}/api/health/ready
+Accept: application/json
+
+###
+
+GET {{Ishara.Api_HostAddress}}/openapi/v1.json
 Accept: application/json
 
 ###

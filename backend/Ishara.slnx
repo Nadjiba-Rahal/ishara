@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../tests/backend/Ishara.Api.Tests/Ishara.Api.Tests.csproj" />
   <Project Path="Ishara.Api/Ishara.Api.csproj" />
   <Project Path="Ishara.Application/Ishara.Application.csproj" />
   <Project Path="Ishara.Domain/Ishara.Domain.csproj" />

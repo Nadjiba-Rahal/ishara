@@ -12,6 +12,8 @@ Create monorepo, Git setup, documentation baseline, Docker setup, and buildable 
 
 Add ASP.NET Core foundation, health checks, Swagger/OpenAPI, EF Core, PostgreSQL, logging, and centralized errors.
 
+Status: complete.
+
 ## Phase 3: Authentication
 
 Add registration, login, JWT, password hashing, roles, and authorization.

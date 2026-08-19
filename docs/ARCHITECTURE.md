@@ -22,6 +22,15 @@ The backend follows Clean Architecture boundaries:
 - `Ishara.Infrastructure`: persistence, external integrations, model inference implementations.
 - `Ishara.Api`: HTTP endpoints, auth, SignalR hubs, OpenAPI, configuration.
 
+Phase 2 backend infrastructure includes:
+
+- JSON console logging through the built-in .NET logging stack.
+- RFC 7807 problem details for unexpected API errors.
+- Live and readiness health endpoints.
+- EF Core PostgreSQL registration through `IsharaDbContext`.
+- Initial EF Core migration baseline. The baseline contains no tables because Phase 2 has not introduced domain entities yet.
+- OpenAPI document generation in development.
+
 ## AI Boundary
 
 Python is used for research, training, preprocessing, and evaluation. Production inference should use exported ONNX models through the .NET backend.

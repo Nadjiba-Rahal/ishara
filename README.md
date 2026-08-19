@@ -14,7 +14,7 @@ The long-term product goal is bidirectional communication:
 
 ## Current Status
 
-Phase 1 scaffold is in progress. This repository currently contains the monorepo structure, backend solution skeleton, documentation baseline, and local development configuration.
+Phase 2 backend foundation is complete. This repository currently contains the monorepo structure, backend solution skeleton, documentation baseline, local development configuration, OpenAPI, health checks, problem details, PostgreSQL wiring, and the initial EF Core migration baseline.
 
 ISHARA does not currently translate ALSL. Future recognition features must expose uncertainty, model version, dataset version, and limitations.
 
@@ -70,6 +70,19 @@ Backend build:
 
 ```powershell
 dotnet build backend/Ishara.slnx
+```
+
+Backend tests:
+
+```powershell
+dotnet test backend/Ishara.slnx
+```
+
+Create future backend migrations:
+
+```powershell
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add <MigrationName> --project backend/Ishara.Infrastructure/Ishara.Infrastructure.csproj --startup-project backend/Ishara.Api/Ishara.Api.csproj --context IsharaDbContext --output-dir Persistence/Migrations
 ```
 
 Local services:
