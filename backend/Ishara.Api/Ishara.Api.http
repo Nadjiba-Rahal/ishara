@@ -14,3 +14,30 @@ GET {{Ishara.Api_HostAddress}}/openapi/v1.json
 Accept: application/json
 
 ###
+
+POST {{Ishara.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@ishara.local",
+  "displayName": "ISHARA Demo",
+  "password": "StrongPassword123!"
+}
+
+###
+
+POST {{Ishara.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@ishara.local",
+  "password": "StrongPassword123!"
+}
+
+###
+
+GET {{Ishara.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###

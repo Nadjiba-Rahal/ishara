@@ -18,6 +18,8 @@ Status: complete.
 
 Add registration, login, JWT, password hashing, roles, and authorization.
 
+Status: complete.
+
 ## Phase 4: Sign Dictionary
 
 Add sign entities, translations, categories, search, pagination, and lawful seed data.

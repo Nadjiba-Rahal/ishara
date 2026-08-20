@@ -1,3 +1,5 @@
+using Ishara.Application.Auth;
+using Ishara.Infrastructure.Auth;
 using Ishara.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +20,23 @@ public static class DependencyInjection
       services.AddDbContext<IsharaDbContext>(options =>
         options.UseNpgsql(connectionString));
     }
+
+    var jwtSection = configuration.GetSection(JwtOptions.SectionName);
+    services.Configure<JwtOptions>(options =>
+    {
+      options.Issuer = jwtSection["Issuer"] ?? string.Empty;
+      options.Audience = jwtSection["Audience"] ?? string.Empty;
+      options.SigningKey = jwtSection["SigningKey"] ?? string.Empty;
+
+      if (int.TryParse(jwtSection["AccessTokenMinutes"], out var accessTokenMinutes))
+      {
+        options.AccessTokenMinutes = accessTokenMinutes;
+      }
+    });
+    services.AddScoped<IUserRepository, EfUserRepository>();
+    services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+    services.AddSingleton<IRefreshTokenService, SecureRefreshTokenService>();
+    services.AddScoped<IJwtTokenService, HmacJwtTokenService>();
 
     return services;
   }

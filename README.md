@@ -14,7 +14,7 @@ The long-term product goal is bidirectional communication:
 
 ## Current Status
 
-Phase 2 backend foundation is complete. This repository currently contains the monorepo structure, backend solution skeleton, documentation baseline, local development configuration, OpenAPI, health checks, problem details, PostgreSQL wiring, and the initial EF Core migration baseline.
+Phase 3 authentication is complete. This repository currently contains the monorepo structure, backend solution skeleton, documentation baseline, local development configuration, OpenAPI, health checks, problem details, PostgreSQL wiring, EF Core migrations, JWT authentication, role authorization, and refresh-token rotation.
 
 ISHARA does not currently translate ALSL. Future recognition features must expose uncertainty, model version, dataset version, and limitations.
 
@@ -90,6 +90,8 @@ Local services:
 ```powershell
 docker compose up --build
 ```
+
+For local API authentication, configure `Jwt__SigningKey` with a strong secret through environment variables or user secrets before running the API.
 
 ## License
 

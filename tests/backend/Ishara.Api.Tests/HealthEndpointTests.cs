@@ -1,11 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
-
 namespace Ishara.Api.Tests;
 
-public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory)
-  : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthEndpointTests(IsharaApiFactory factory)
+  : IClassFixture<IsharaApiFactory>
 {
   [Fact]
   public async Task LiveHealthEndpointReturnsOk()

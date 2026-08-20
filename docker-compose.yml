@@ -25,6 +25,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-ishara};Username=${POSTGRES_USER:-ishara};Password=${POSTGRES_PASSWORD:-ishara_dev_password}
+      Jwt__Issuer: ${JWT__ISSUER:-Ishara.Api}
+      Jwt__Audience: ${JWT__AUDIENCE:-Ishara.Clients}
+      Jwt__AccessTokenMinutes: ${JWT__ACCESS_TOKEN_MINUTES:-15}
+      Jwt__SigningKey: ${JWT__SIGNINGKEY:?Set JWT__SIGNINGKEY in your local environment}
     ports:
       - "${API_PORT:-5090}:8080"
     depends_on:
