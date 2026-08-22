@@ -31,6 +31,13 @@ Phase 2 backend infrastructure includes:
 - Initial EF Core migration baseline. The baseline contains no tables because Phase 2 has not introduced domain entities yet.
 - OpenAPI document generation in development.
 
+Phase 4 dictionary infrastructure includes:
+
+- Sign and category persistence with source attribution.
+- 3DZSignDB importer for local `categories_files.json` and SigML files.
+- Search, pagination, category listing, and sign detail endpoints.
+- Web dictionary UI that renders real backend records and shows an empty state before import.
+
 ## AI Boundary
 
 Python is used for research, training, preprocessing, and evaluation. Production inference should use exported ONNX models through the .NET backend.

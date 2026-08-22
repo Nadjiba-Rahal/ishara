@@ -22,6 +22,100 @@ namespace Ishara.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Ishara.Domain.Signs.Sign", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ArabicLabel")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("arabic_label");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Gloss")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("gloss");
+
+                    b.Property<string>("HamNoSys")
+                        .HasColumnType("text")
+                        .HasColumnName("ham_no_sys");
+
+                    b.Property<string>("MediaUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("media_url");
+
+                    b.Property<string>("Sigml")
+                        .HasColumnType("text")
+                        .HasColumnName("sigml");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("source_name");
+
+                    b.Property<string>("SourceRecordId")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("source_record_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArabicLabel");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("SourceName", "SourceRecordId")
+                        .IsUnique();
+
+                    b.ToTable("signs", (string)null);
+                });
+
+            modelBuilder.Entity("Ishara.Domain.Signs.SignCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("slug");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("sign_categories", (string)null);
+                });
+
             modelBuilder.Entity("Ishara.Domain.Users.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -104,6 +198,16 @@ namespace Ishara.Infrastructure.Persistence.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("Ishara.Domain.Signs.Sign", b =>
+                {
+                    b.HasOne("Ishara.Domain.Signs.SignCategory", "Category")
+                        .WithMany("Signs")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("Ishara.Domain.Users.RefreshToken", b =>
                 {
                     b.HasOne("Ishara.Domain.Users.User", "User")
@@ -113,6 +217,11 @@ namespace Ishara.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ishara.Domain.Signs.SignCategory", b =>
+                {
+                    b.Navigation("Signs");
                 });
 
             modelBuilder.Entity("Ishara.Domain.Users.User", b =>

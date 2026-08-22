@@ -1,0 +1,30 @@
+namespace Ishara.Application.Recognition;
+
+public sealed record RecognitionRequest(
+  IReadOnlyList<IReadOnlyList<float>>? Frames,
+  IReadOnlyList<LandmarkPoint>? Landmarks);
+
+public sealed record LandmarkPoint(float X, float Y, float Z = 0);
+
+public sealed record RecognitionStatusResponse(
+    string Status,
+    string Message,
+    string? ModelVersion,
+    string? DatasetVersion);
+
+public sealed record RecognitionResponse(
+    bool Available,
+    string? PredictedSign,
+    float? Confidence,
+    string ModelStatus,
+    string? ModelVersion,
+    string? DatasetVersion,
+    IReadOnlyList<RecognitionCandidate> TopPredictions);
+
+public sealed record RecognitionCandidate(string Sign, float Confidence);
+
+public interface IRecognitionService
+{
+  RecognitionStatusResponse GetStatus();
+  Task<RecognitionResponse> PredictAsync(RecognitionRequest request, CancellationToken cancellationToken);
+}

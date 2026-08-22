@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "ISHARA",
+    "slug": "ishara-mobile",
+    "scheme": "ishara",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "ISHARA uses the camera to recognize Algerian Sign Language signs. Frames are processed transiently and are not stored by default."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    },
+    "extra": {
+      "isharaApiUrl": "http://localhost:5090",
+      "isharaWebUrl": "http://localhost:3000/translate"
+    }
+  }
+}

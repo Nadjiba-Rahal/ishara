@@ -107,7 +107,7 @@ public sealed class AuthEndpointTests(IsharaAuthApiFactory factory) : IClassFixt
     Assert.Equal(HttpStatusCode.OK, adminCheck.StatusCode);
   }
 
-  private async Task<AuthResponse> RegisterAsync(HttpClient client)
+  internal static async Task<AuthResponse> RegisterAsync(HttpClient client)
   {
     var email = $"user-{Guid.NewGuid():N}@ishara.test";
     var response = await client.PostAsJsonAsync("/api/auth/register", new RegisterUserRequest(

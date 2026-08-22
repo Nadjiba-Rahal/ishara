@@ -3,6 +3,8 @@ using System.Text;
 using Ishara.Api.Errors;
 using Ishara.Application;
 using Ishara.Application.Auth;
+using Ishara.Application.Dictionary;
+using Ishara.Application.Recognition;
 using Ishara.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +20,15 @@ builder.Services.AddOpenApi();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("ContributorOrAbove", policy =>
+        policy.RequireRole("Contributor", "Moderator", "Researcher", "Admin"));
+});
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WebDevelopment", policy =>
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
 var jwtOptions = builder.Configuration
@@ -63,6 +74,7 @@ if (!string.IsNullOrWhiteSpace(postgresConnection))
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseCors("WebDevelopment");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -91,6 +103,31 @@ app.MapHealthChecks("/api/health/live", new()
 });
 
 app.MapHealthChecks("/api/health/ready");
+
+var recognition = app.MapGroup("/api/recognition");
+
+recognition.MapGet("/status", (IRecognitionService service) =>
+    Results.Ok(service.GetStatus()));
+
+recognition.MapPost("/predict", async (
+    RecognitionRequest request,
+    IRecognitionService service,
+    CancellationToken cancellationToken) =>
+{
+    if (request.Frames is null || request.Frames.Count != 16 || request.Frames.Any(frame => frame.Count != 258))
+    {
+        return Results.BadRequest(new
+        {
+            code = "invalid_frames",
+            message = "Exactly 16 frames with 258 features per frame are required."
+        });
+    }
+
+    var result = await service.PredictAsync(request, cancellationToken);
+    return result.ModelStatus == "unavailable"
+        ? Results.Json(result, statusCode: StatusCodes.Status503ServiceUnavailable)
+        : Results.Ok(result);
+});
 
 var auth = app.MapGroup("/api/auth");
 
@@ -158,6 +195,68 @@ auth.MapGet("/admin-check", () => Results.Ok(new
     status = "authorized",
     role = "Admin"
 })).RequireAuthorization("AdminOnly");
+
+var signs = app.MapGroup("/api/signs");
+
+signs.MapGet("/", async (
+    string? q,
+    string? category,
+    int? page,
+    int? pageSize,
+    IDictionaryRepository dictionary,
+    CancellationToken cancellationToken) =>
+{
+    var result = await dictionary.GetSignsAsync(
+        new SignQuery(q, category, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 20 : pageSize.Value),
+        cancellationToken);
+
+    return Results.Ok(result);
+});
+
+signs.MapGet("/search", async (
+    string q,
+    int? page,
+    int? pageSize,
+    IDictionaryRepository dictionary,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(q))
+    {
+        return Results.BadRequest(new { code = "missing_query", message = "Search query is required." });
+    }
+
+    var result = await dictionary.GetSignsAsync(
+        new SignQuery(q, null, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 20 : pageSize.Value),
+        cancellationToken);
+
+    return Results.Ok(result);
+});
+
+signs.MapGet("/{id:guid}", async (
+    Guid id,
+    IDictionaryRepository dictionary,
+    CancellationToken cancellationToken) =>
+{
+    var sign = await dictionary.GetSignAsync(id, cancellationToken);
+    return sign is null ? Results.NotFound() : Results.Ok(sign);
+});
+
+signs.MapPost("/import/3dzsigndb", async (
+    Import3DzSignDbRequest request,
+    IDictionaryImportService importer,
+    CancellationToken cancellationToken) =>
+{
+    var result = await importer.Import3DzSignDbAsync(request, cancellationToken);
+    return Results.Ok(result);
+}).RequireAuthorization("ContributorOrAbove");
+
+app.MapGet("/api/categories", async (
+    IDictionaryRepository dictionary,
+    CancellationToken cancellationToken) =>
+{
+    var categories = await dictionary.GetCategoriesAsync(cancellationToken);
+    return Results.Ok(categories);
+});
 
 app.Run();
 

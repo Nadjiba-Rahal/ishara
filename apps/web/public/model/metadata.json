@@ -1,0 +1,23 @@
+{
+  "dataset": "VDzSL",
+  "model": "IsharaFinal",
+  "architecture": "LayerNorm(258) -> 2-layer BiLSTM(192, bidirectional) -> Temporal Attention + Max Pooling -> MLP Classifier",
+  "classes": 415,
+  "frames": 16,
+  "features_per_frame": 258,
+  "input_shape": [
+    1,
+    16,
+    258
+  ],
+  "input_name": "landmarks",
+  "output_name": "logits",
+  "opset_version": 17,
+  "best_epoch": 113,
+  "validation_accuracy": 0.5563,
+  "unseen_signer_test_accuracy": 0.4448,
+  "baseline_validation_accuracy": 0.2106,
+  "baseline_unseen_signer_test_accuracy": 0.188,
+  "validation_improvement_points": 0.3457,
+  "unseen_signer_improvement_points": 0.2568
+}

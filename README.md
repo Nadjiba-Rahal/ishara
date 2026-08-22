@@ -14,9 +14,10 @@ The long-term product goal is bidirectional communication:
 
 ## Current Status
 
-Phase 3 authentication is complete. This repository currently contains the monorepo structure, backend solution skeleton, documentation baseline, local development configuration, OpenAPI, health checks, problem details, PostgreSQL wiring, EF Core migrations, JWT authentication, role authorization, and refresh-token rotation.
-
-ISHARA does not currently translate ALSL. Future recognition features must expose uncertainty, model version, dataset version, and limitations.
+The supplied ONNX model is bundled and the web translation workspace runs the
+real browser pipeline: camera → MediaPipe pose/hand landmarks → 16-frame
+window → 258-feature tensor → ONNX inference → class label. The backend also
+exposes the same model through `/api/recognition/predict`.
 
 ## Principles
 
@@ -66,6 +67,42 @@ Prerequisites:
 
 On Windows PowerShell, use `npm.cmd` because script execution policy may block `npm.ps1`.
 
+### Web quick start
+
+From the folder containing `docker-compose.yml`, Docker Compose can start the
+database without any cloud API key:
+
+```powershell
+docker compose up postgres -d
+```
+
+The compose file has a local-only JWT fallback so this command does not fail
+on missing `JWT__SIGNINGKEY`. For a named local configuration, copy
+`.env.example` to `.env` and replace `JWT__SIGNINGKEY` with a random value of
+at least 32 characters. No Google, OpenAI, or other external API key is
+required by ISHARA.
+
+Then, in separate terminals:
+
+```powershell
+dotnet run --project backend/Ishara.Api
+cd apps\web
+npm.cmd ci
+$env:NEXT_PUBLIC_ISHARA_API_URL="http://localhost:5090"
+npm.cmd run dev
+```
+
+Open `http://localhost:3000`. The browser camera requires `localhost` or HTTPS.
+The first camera recognition attempt downloads the MediaPipe WASM runtime and
+landmark models; internet access is required for that browser step. Camera
+recognition is available at `/translate` and requires localhost or HTTPS.
+
+For Android Emulator, set `isharaApiUrl` in `apps/mobile/app.json` to
+`http://10.0.2.2:5090`. For a physical phone, use the computer's LAN IP, for
+example `http://192.168.1.20:5090`, and run Expo with the phone and computer
+on the same network. For iOS Simulator, `http://localhost:5090` normally
+works.
+
 Backend build:
 
 ```powershell
@@ -92,6 +129,46 @@ docker compose up --build
 ```
 
 For local API authentication, configure `Jwt__SigningKey` with a strong secret through environment variables or user secrets before running the API.
+
+3DZSignDB import:
+
+```powershell
+POST /api/signs/import/3dzsigndb
+```
+
+The import endpoint expects a server-local `categories_files.json` path and SigML directory from a legally obtained 3DZSignDB copy. The repository does not include copied ALSL sign data.
+
+## Supplied recognition model and avatar
+
+The final project includes the supplied ONNX model under
+`ml/models/ishara-final/` and the supplied CWASA/SigML package under
+`apps/web/public/avatar/`. The model metadata reports 415 classes, 16 frames,
+258 features per frame, 55.63% validation accuracy, and 44.48% unseen-signer
+test accuracy on VDzSL. These are the supplied evaluation figures, not a
+guarantee for a user's camera.
+
+The API loads the model from `ml/models/ishara-final/model.onnx` when run from
+the repository root, or from an absolute `Recognition__ModelPath`.
+`GET /api/recognition/status` should then report `ready`.
+`POST /api/recognition/predict` expects JSON with `frames`: 16 arrays of 258
+normalized landmark features. Camera landmark extraction still needs to produce
+that exact representation; the browser preview does not fabricate it.
+
+The avatar package is served at `/avatar/index.html`. It uses the included
+CWASA runtime and real SigML assets; it is a standalone integration surface,
+not an ALSL recognition model.
+
+### Mobile
+
+```powershell
+cd apps\mobile
+npm.cmd ci
+npm.cmd start
+```
+
+The Expo client includes the native camera permission and opens the same
+end-to-end recognition pipeline in its WebView. For a physical phone, set
+`isharaWebUrl` to the computer's LAN address.
 
 ## License
 

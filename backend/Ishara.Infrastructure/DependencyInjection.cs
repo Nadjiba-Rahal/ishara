@@ -1,6 +1,10 @@
 using Ishara.Application.Auth;
+using Ishara.Application.Dictionary;
+using Ishara.Application.Recognition;
 using Ishara.Infrastructure.Auth;
+using Ishara.Infrastructure.Dictionary;
 using Ishara.Infrastructure.Persistence;
+using Ishara.Infrastructure.Recognition;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +41,8 @@ public static class DependencyInjection
     services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
     services.AddSingleton<IRefreshTokenService, SecureRefreshTokenService>();
     services.AddScoped<IJwtTokenService, HmacJwtTokenService>();
+    services.AddScoped<IDictionaryRepository, EfDictionaryRepository>();
+    services.AddSingleton<IRecognitionService, OnnxRecognitionService>();
 
     return services;
   }

@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Ishara.Application\Ishara.Application.csproj" />
     <ProjectReference Include="..\Ishara.Domain\Ishara.Domain.csproj" />
   </ItemGroup>
