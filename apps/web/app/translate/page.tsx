@@ -140,6 +140,7 @@ export default function TranslatePage() {
   const busy = useRef(false);
   const active = useRef(false);
   const lastSampleAt = useRef<number | null>(null);
+  const readyForNextSign = useRef(true);
   const streak = useRef<{ sign: string; count: number }>({ sign: "", count: 0 });
   const chipCounter = useRef(0);
 
@@ -239,6 +240,7 @@ export default function TranslatePage() {
     setState(modelReady ? "Camera stopped" : "Camera stopped — no model plugged in yet");
     rawFrames.current = [];
     lastSampleAt.current = null;
+    readyForNextSign.current = true;
     streak.current = { sign: "", count: 0 };
     setBufferFill(0);
     setLiveConfidence(0);
@@ -320,7 +322,17 @@ export default function TranslatePage() {
         const p = pose.current.detectForVideo(video.current, now);
         drawOverlay(p.landmarks[0], h.landmarks, h.handedness as unknown as { categoryName: string }[][]);
 
-        if (session.current && modelReady &&
+        const hasCompleteTracking = p.landmarks.length > 0 && h.landmarks.length > 0;
+        if (!hasCompleteTracking) {
+          rawFrames.current = [];
+          lastSampleAt.current = null;
+          readyForNextSign.current = true;
+          streak.current = { sign: "", count: 0 };
+          setBufferFill(0);
+          setLiveConfidence(0);
+        }
+
+        if (session.current && modelReady && hasCompleteTracking && readyForNextSign.current &&
             (lastSampleAt.current === null || now - lastSampleAt.current >= SAMPLE_INTERVAL_MS)) {
           lastSampleAt.current = now;
           const raw = buildRawFrame(p.landmarks[0], h.landmarks, h.handedness as unknown as { categoryName: string }[][]);
@@ -361,6 +373,7 @@ export default function TranslatePage() {
                 // natural debounce while the buffer refills from empty.
                 rawFrames.current = [];
                 setBufferFill(0);
+                readyForNextSign.current = false;
                 streak.current = { sign: "", count: 0 };
                 setLiveConfidence(0);
               }
