@@ -18,6 +18,8 @@ public sealed class OnnxRecognitionService : IRecognitionService, IDisposable
   private readonly string? _datasetVersion = null;
   private readonly string _inputName = "landmarks";
   private readonly string _outputName = "logits";
+  private readonly int _frames = 16;
+  private readonly int _featuresPerFrame = 258;
   private readonly string? _loadError;
 
   public OnnxRecognitionService(IConfiguration configuration)
@@ -49,6 +51,8 @@ public sealed class OnnxRecognitionService : IRecognitionService, IDisposable
       _datasetVersion = metadata.Dataset;
       _inputName = metadata.InputName;
       _outputName = metadata.OutputName;
+      _frames = metadata.Frames;
+      _featuresPerFrame = metadata.FeaturesPerFrame;
     }
     catch (Exception exception) when (exception is IOException or JsonException or InvalidDataException or OnnxRuntimeException)
     {
@@ -59,8 +63,11 @@ public sealed class OnnxRecognitionService : IRecognitionService, IDisposable
 
   public RecognitionStatusResponse GetStatus() =>
     _session is null
-      ? new("unavailable", _loadError ?? "Recognition model is not available", null, null)
-      : new("ready", "Recognition model is available", _modelVersion, _datasetVersion);
+      ? new("unavailable", _loadError ?? "Recognition model is not available", null, null, null, null)
+      : new("ready", "Recognition model is available", _modelVersion, _datasetVersion, _frames, _featuresPerFrame);
+
+  public RecognitionInputShape GetInputShape() =>
+    new(_frames, _featuresPerFrame);
 
   public Task<RecognitionResponse> PredictAsync(RecognitionRequest request, CancellationToken cancellationToken)
   {
@@ -71,10 +78,16 @@ public sealed class OnnxRecognitionService : IRecognitionService, IDisposable
     }
 
     var frames = request.Frames;
-    var tensor = new DenseTensor<float>(new[] { 1, 16, 258 });
-    for (var frame = 0; frame < 16; frame++)
+    if (frames.Count != _frames || frames.Any(frame => frame.Count != _featuresPerFrame))
     {
-      for (var feature = 0; feature < 258; feature++)
+      return Task.FromResult(new RecognitionResponse(
+        false, null, null, "invalid_input", _modelVersion, _datasetVersion, []));
+    }
+
+    var tensor = new DenseTensor<float>(new[] { 1, _frames, _featuresPerFrame });
+    for (var frame = 0; frame < _frames; frame++)
+    {
+      for (var feature = 0; feature < _featuresPerFrame; feature++)
       {
         tensor[0, frame, feature] = frames[frame][feature];
       }
@@ -107,5 +120,8 @@ public sealed class OnnxRecognitionService : IRecognitionService, IDisposable
     string Dataset,
     string Model,
     [property: System.Text.Json.Serialization.JsonPropertyName("input_name")] string InputName,
-    [property: System.Text.Json.Serialization.JsonPropertyName("output_name")] string OutputName);
+    [property: System.Text.Json.Serialization.JsonPropertyName("output_name")] string OutputName,
+    int Frames = 16,
+    [property: System.Text.Json.Serialization.JsonPropertyName("features_per_frame")]
+    int FeaturesPerFrame = 258);
 }

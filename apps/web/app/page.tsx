@@ -5,8 +5,8 @@ export default function Home() {
     <div className="page-shell">
       <section className="hero">
         <div className="hero-copy-block">
-          <p className="eyebrow">A clearer way to learn ALSL</p>
-          <h1>Find the sign. Feel the meaning.</h1>
+          <p className="eyebrow">ALSL communication, made clearer</p>
+          <h1>Understand every gesture.</h1>
           <p className="hero-copy">
             ISHARA brings Algerian Sign Language into one calm, useful place: look up signs, translate with your camera, and practice at your own pace.
           </p>
@@ -20,10 +20,10 @@ export default function Home() {
           </div>
         </div>
         <div className="hero-illustration" aria-label="A hand sign translation preview">
-          <div className="illustration-topline"><span>LIVE SESSION</span><span className="live-dot" /></div>
+          <div className="illustration-topline"><span>TRANSLATION PREVIEW</span><span className="preview-badge">BROWSER-LOCAL</span></div>
           <div className="sign-figure" aria-hidden="true">&#9995;</div>
-          <div className="gesture-label"><span className="mini-mark">I</span><span><strong>hello</strong><small>Algerian Sign Language</small></span><b>98%</b></div>
-          <div className="gesture-trail"><span>مرحبا</span><span>hello</span><span>bonjour</span></div>
+          <div className="gesture-label"><span className="mini-mark">I</span><span><strong>Recognition ready</strong><small>Plug in your trained model to begin</small></span><b>LOCAL</b></div>
+          <div className="gesture-trail"><span lang="ar" dir="rtl">إشارة</span><span>meaning</span><span>conversation</span></div>
         </div>
       </section>
 
@@ -40,16 +40,16 @@ export default function Home() {
 
         <article className="feature-card">
           <span className="feature-icon icon-camera" aria-hidden="true">◉</span>
-          <h2>Translate</h2>
+          <h2>Live translation</h2>
           <p>
-             Look up signs by Arabic label or gloss, or run local camera recognition in the translation workspace.
+             Use your camera for local landmark tracking and connect your trained ONNX model when it is ready.
           </p>
           <Link href="/translate">Open translator →</Link>
         </article>
 
         <article className="feature-card">
           <span className="feature-icon icon-practice" aria-hidden="true">↗</span>
-          <h2>Practice</h2>
+          <h2>Learn by doing</h2>
           <p>Review dictionary entries and quiz yourself on labels and glosses as a first, honest practice mode.</p>
           <Link href="/practice">Start practicing →</Link>
         </article>

@@ -1,0 +1,213 @@
+# ================================================================
+# CELL 4 (v3) -- CPU/GPU-SAFE MODEL WITH DOMAIN-ADVERSARIAL HEAD
+# ================================================================
+import math, copy
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP = DEVICE.type == "cuda"
+PIN_MEMORY = DEVICE.type == "cuda"
+NUM_CLASSES = len(labels)
+
+print(f"Device: {DEVICE}")
+if DEVICE.type == "cuda":
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("GPU not available; training will run in CPU mode.")
+
+class GradientReversal(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return -ctx.alpha * grad_output, None
+
+def grad_reverse(x, alpha):
+    return GradientReversal.apply(x, alpha)
+
+class IsharaFinal(nn.Module):
+    def __init__(self, n_classes, n_signers, input_size):
+        super().__init__()
+        self.input_norm = nn.LayerNorm(input_size)
+        self.lstm = nn.LSTM(
+            input_size=input_size, hidden_size=192, num_layers=2,
+            batch_first=True, bidirectional=True, dropout=0.30
+        )
+        self.attention = nn.Sequential(
+            nn.Linear(384, 128), nn.Tanh(), nn.Linear(128, 1)
+        )
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(768), nn.Linear(768, 384), nn.GELU(),
+            nn.Dropout(0.35), nn.Linear(384, 192), nn.GELU(),
+            nn.Dropout(0.25), nn.Linear(192, n_classes)
+        )
+        self.domain_head = nn.Sequential(
+            nn.Linear(768, 128), nn.ReLU(), nn.Dropout(0.30),
+            nn.Linear(128, n_signers)
+        )
+
+    def forward(self, x, alpha=0.0):
+        x = self.input_norm(x)
+        y, _ = self.lstm(x)
+        weights = torch.softmax(self.attention(y), dim=1)
+        attention_pool = torch.sum(weights * y, dim=1)
+        max_pool = torch.max(y, dim=1).values
+        features = torch.cat([attention_pool, max_pool], dim=1)
+        class_logits = self.classifier(features)
+        domain_logits = self.domain_head(grad_reverse(features, alpha))
+        return class_logits, domain_logits
+
+model = IsharaFinal(NUM_CLASSES, NUM_SIGNERS, MODEL_INPUT_SIZE).to(DEVICE)
+print("Parameters:", f"{sum(p.numel() for p in model.parameters()):,}")
+
+EPOCHS, MAX_LR, MIN_LR, WD, WARMUP, PATIENCE = 150, 1e-3, 1e-5, 1e-4, 8, 25
+DOMAIN_LOSS_WEIGHT = 0.2
+BEST_PATH = "/content/ishara_FINAL_best.pt"
+criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
+domain_criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(model.parameters(), lr=MAX_LR, weight_decay=WD)
+
+# AMP is enabled only for CUDA. The CPU path stays ordinary float32.
+scaler = torch.amp.GradScaler("cuda", enabled=USE_AMP)
+
+def get_lr(epoch):
+    if epoch <= WARMUP:
+        return MIN_LR + (MAX_LR - MIN_LR) * (epoch / WARMUP)
+    progress = (epoch - WARMUP) / (EPOCHS - WARMUP)
+    return MIN_LR + (MAX_LR - MIN_LR) * 0.5 * (
+        1 + math.cos(math.pi * progress)
+    )
+
+def get_alpha(epoch):
+    progress = epoch / EPOCHS
+    return 2.0 / (1.0 + math.exp(-10 * progress)) - 1.0
+
+ema_model = copy.deepcopy(model)
+for parameter in ema_model.parameters():
+    parameter.requires_grad_(False)
+EMA_DECAY = 0.999
+
+@torch.no_grad()
+def update_ema():
+    for ema_parameter, parameter in zip(ema_model.parameters(), model.parameters()):
+        ema_parameter.mul_(EMA_DECAY).add_(
+            parameter, alpha=1.0 - EMA_DECAY
+        )
+
+def train_one_epoch(loader, alpha):
+    model.train()
+    total = 0
+    correct = 0
+    loss_sum = 0.0
+    epoch_start = time.time()
+    total_batches = len(loader)
+
+    for batch_index, (x, y, signer_id) in enumerate(loader, start=1):
+        x = x.to(DEVICE, non_blocking=PIN_MEMORY)
+        y = y.to(DEVICE, non_blocking=PIN_MEMORY)
+        signer_id = signer_id.to(DEVICE, non_blocking=PIN_MEMORY)
+        optimizer.zero_grad(set_to_none=True)
+
+        with torch.amp.autocast(
+            device_type=DEVICE.type, enabled=USE_AMP
+        ):
+            class_logits, domain_logits = model(x, alpha=alpha)
+            loss = (
+                criterion(class_logits, y)
+                + DOMAIN_LOSS_WEIGHT * domain_criterion(domain_logits, signer_id)
+            )
+
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        scaler.step(optimizer)
+        scaler.update()
+        update_ema()
+
+        batch_size = y.size(0)
+        loss_sum += loss.item() * batch_size
+        correct += (class_logits.argmax(1) == y).sum().item()
+        total += batch_size
+
+        # Keep CPU runs visibly alive and estimate the remaining epoch time.
+        if batch_index == 1 or batch_index % 10 == 0 or batch_index == total_batches:
+            elapsed = time.time() - epoch_start
+            rate = batch_index / max(elapsed, 1e-6)
+            remaining = max(total_batches - batch_index, 0) / max(rate, 1e-6)
+            print(
+                f"  batch {batch_index:03d}/{total_batches} | "
+                f"loss={loss.item():.4f} | "
+                f"elapsed={elapsed / 60:.1f}m | "
+                f"ETA={remaining / 60:.1f}m",
+                flush=True,
+            )
+
+    return loss_sum / total, correct / total
+
+@torch.no_grad()
+def evaluate(loader, eval_model):
+    if loader is None:
+        return 0.0
+    eval_model.eval()
+    total = 0
+    correct = 0
+    for x, y, _ in loader:
+        x = x.to(DEVICE, non_blocking=PIN_MEMORY)
+        y = y.to(DEVICE, non_blocking=PIN_MEMORY)
+        class_logits, _ = eval_model(x, alpha=0.0)
+        correct += (class_logits.argmax(1) == y).sum().item()
+        total += y.size(0)
+    return correct / total if total else 0.0
+
+best_val, best_epoch, no_improve = -1.0, 0, 0
+for epoch in range(1, EPOCHS + 1):
+    lr = get_lr(epoch)
+    for group in optimizer.param_groups:
+        group["lr"] = lr
+    alpha = get_alpha(epoch)
+
+    train_loss, train_acc = train_one_epoch(train_loader, alpha)
+    val_acc = evaluate(val_loader, model)
+    ema_val_acc = evaluate(val_loader, ema_model)
+    eval_acc = max(val_acc, ema_val_acc)
+    eval_model = ema_model if ema_val_acc >= val_acc else model
+
+    print(
+        f"Epoch {epoch:03d}/{EPOCHS} | "
+        f"loss={train_loss:.4f} | train={train_acc:.2%} | "
+        f"val={val_acc:.2%} | EMA={ema_val_acc:.2%} | "
+        f"alpha={alpha:.2f} | lr={lr:.2e}"
+    )
+
+    if eval_acc > best_val:
+        best_val, best_epoch, no_improve = eval_acc, epoch, 0
+        torch.save({
+            "epoch": epoch,
+            "model_state_dict": eval_model.state_dict(),
+            "best_val_acc": best_val,
+            "labels": labels,
+        }, BEST_PATH)
+        print(f"    NEW BEST: {best_val:.2%}")
+    else:
+        no_improve += 1
+
+    if no_improve >= PATIENCE:
+        print(
+            f"Early stopping at epoch {epoch}. "
+            f"Best: {best_val:.2%} (epoch {best_epoch})"
+        )
+        break
+
+checkpoint = torch.load(BEST_PATH, map_location=DEVICE)
+model.load_state_dict(checkpoint["model_state_dict"])
+final_val_acc = evaluate(val_loader, model)
+final_unseen_acc = evaluate(unseen_loader, model) if unseen_loader else None
+
+print()
+print("=" * 70)
+print(f"Stratified validation accuracy : {final_val_acc:.2%}")
+if final_unseen_acc is not None:
+    print(f"Unseen-signer ('{TEST_SIGNER}') accuracy : {final_unseen_acc:.2%}")
+print("=" * 70)

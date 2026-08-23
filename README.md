@@ -14,10 +14,11 @@ The long-term product goal is bidirectional communication:
 
 ## Current Status
 
-The supplied ONNX model is bundled and the web translation workspace runs the
-real browser pipeline: camera → MediaPipe pose/hand landmarks → 16-frame
-window → 258-feature tensor → ONNX inference → class label. The backend also
-exposes the same model through `/api/recognition/predict`.
+The web translation workspace contains the real browser pipeline: camera →
+MediaPipe pose/hand landmarks → metadata-configured frame window → ONNX
+inference → class label. The exported VDzSL v2 model is now installed in the
+web and backend model slots. The backend exposes the same metadata-driven
+model contract through `/api/recognition/predict`.
 
 ## Principles
 
@@ -140,19 +141,17 @@ The import endpoint expects a server-local `categories_files.json` path and SigM
 
 ## Supplied recognition model and avatar
 
-The final project includes the supplied ONNX model under
-`ml/models/ishara-final/` and the supplied CWASA/SigML package under
-`apps/web/public/avatar/`. The model metadata reports 415 classes, 16 frames,
-258 features per frame, 55.63% validation accuracy, and 44.48% unseen-signer
-test accuracy on VDzSL. These are the supplied evaluation figures, not a
-guarantee for a user's camera.
+The project includes the exported VDzSL v2 model under
+`ml/models/ishara-final/` and `apps/web/public/model/`, plus the supplied
+CWASA/SigML package under `apps/web/public/avatar/`. The model reports 59.16%
+stratified validation accuracy and 54.51% on the held-out signer test. These
+are training-run metrics, not a guarantee for a user's camera.
 
 The API loads the model from `ml/models/ishara-final/model.onnx` when run from
 the repository root, or from an absolute `Recognition__ModelPath`.
-`GET /api/recognition/status` should then report `ready`.
-`POST /api/recognition/predict` expects JSON with `frames`: 16 arrays of 258
-normalized landmark features. Camera landmark extraction still needs to produce
-that exact representation; the browser preview does not fabricate it.
+`GET /api/recognition/status` reports the model's metadata-configured input
+shape. `POST /api/recognition/predict` expects JSON with `frames` matching that
+shape, containing normalized landmark features.
 
 The avatar package is served at `/avatar/index.html`. It uses the included
 CWASA runtime and real SigML assets; it is a standalone integration surface,

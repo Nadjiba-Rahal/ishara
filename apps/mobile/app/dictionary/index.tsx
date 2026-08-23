@@ -11,17 +11,22 @@ export default function DictionaryScreen() {
   const [signs, setSigns] = useState<SignDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback((q: string) => {
     setIsLoading(true);
+    setLoadError(false);
     Promise.all([getCategories(), getSigns({ q: q || undefined, pageSize: 30 })]).then(
       ([categoryResult, signResult]) => {
         setCategories(categoryResult);
         setSigns(signResult.items);
         setTotalCount(signResult.totalCount);
-        setIsLoading(false);
       }
-    );
+    ).catch(() => {
+      setLoadError(true);
+      setSigns([]);
+      setTotalCount(0);
+    }).finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -51,6 +56,15 @@ export default function DictionaryScreen() {
 
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} color={colors.primary} />
+      ) : loadError ? (
+        <View style={{ paddingHorizontal: 20 }}>
+          <View style={shared.emptyState}>
+            <Text style={{ fontWeight: "700", color: colors.ink }}>Dictionary unavailable</Text>
+            <Text style={shared.body}>
+              Check that the ISHARA API is running and that the phone can reach its configured address.
+            </Text>
+          </View>
+        </View>
       ) : signs.length === 0 ? (
         <View style={{ paddingHorizontal: 20 }}>
           <View style={shared.emptyState}>

@@ -15,10 +15,10 @@ export default function TranslateScreen() {
   function search() {
     setSearched(true);
     setLoading(true);
-    getSigns({ q: text, pageSize: 10 }).then((r) => {
-      setResults(r.items);
-      setLoading(false);
-    });
+    getSigns({ q: text, pageSize: 10 })
+      .then((r) => setResults(r.items))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false));
   }
 
   return (

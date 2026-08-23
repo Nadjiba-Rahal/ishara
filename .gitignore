@@ -1,0 +1,18 @@
+# Dependencies and generated frontend output
+apps/web/node_modules/
+apps/web/.next/
+apps/web/tsconfig.tsbuildinfo
+apps/mobile/node_modules/
+apps/mobile/.expo/
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Local model backups
+apps/web/public/model.OLD_258_DO_NOT_USE/

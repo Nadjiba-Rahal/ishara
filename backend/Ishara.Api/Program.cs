@@ -114,12 +114,16 @@ recognition.MapPost("/predict", async (
     IRecognitionService service,
     CancellationToken cancellationToken) =>
 {
-    if (request.Frames is null || request.Frames.Count != 16 || request.Frames.Any(frame => frame.Count != 258))
+    var shape = service.GetInputShape();
+
+    if (request.Frames is null ||
+        request.Frames.Count != shape.Frames ||
+        request.Frames.Any(frame => frame.Count != shape.FeaturesPerFrame))
     {
         return Results.BadRequest(new
         {
             code = "invalid_frames",
-            message = "Exactly 16 frames with 258 features per frame are required."
+            message = $"Exactly {shape.Frames} frames with {shape.FeaturesPerFrame} features per frame are required."
         });
     }
 

@@ -10,7 +10,11 @@ public sealed record RecognitionStatusResponse(
     string Status,
     string Message,
     string? ModelVersion,
-    string? DatasetVersion);
+    string? DatasetVersion,
+    int? Frames = null,
+    int? FeaturesPerFrame = null);
+
+public sealed record RecognitionInputShape(int Frames, int FeaturesPerFrame);
 
 public sealed record RecognitionResponse(
     bool Available,
@@ -26,5 +30,6 @@ public sealed record RecognitionCandidate(string Sign, float Confidence);
 public interface IRecognitionService
 {
   RecognitionStatusResponse GetStatus();
+  RecognitionInputShape GetInputShape();
   Task<RecognitionResponse> PredictAsync(RecognitionRequest request, CancellationToken cancellationToken);
 }
