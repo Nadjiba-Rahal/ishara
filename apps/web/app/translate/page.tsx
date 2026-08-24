@@ -26,7 +26,8 @@ const POSE_LM = 33;
 const HAND_LM = 21;
 
 const MIN_CONFIDENCE = 0.55;
-const STABLE_FRAMES = 5;
+const MIN_MARGIN = 0.2;
+const STABLE_FRAMES = 8;
 const SAMPLE_INTERVAL_MS = 100;
 
 // A light set of hand-skeleton edges for the overlay drawing (thumb,
@@ -355,11 +356,12 @@ export default function TranslatePage() {
               .sort((a, b) => b.confidence - a.confidence)
               .slice(0, 5);
             const top = ranked[0];
+            const margin = top.confidence - (ranked[1]?.confidence ?? 0);
 
-            if (top.confidence < MIN_CONFIDENCE) {
+            if (top.confidence < MIN_CONFIDENCE || margin < MIN_MARGIN) {
               streak.current = { sign: "", count: 0 };
               setLiveConfidence(0);
-              setState("Unsure — hold the sign steady");
+              setState("Unsure — hold one clear sign steady");
             } else if (streak.current.sign === top.sign) {
               streak.current.count += 1;
               setLiveConfidence(streak.current.count / STABLE_FRAMES);
