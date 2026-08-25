@@ -396,11 +396,11 @@ export default function TranslatePage() {
   const sentence = transcript.map(c => c.text).join("");
 
   return (
-    <main className="shell">
+    <main className="shell translate-shell">
       <section className="card translate-card">
         <p className="eyebrow">REAL-TIME TRANSLATION</p>
         <h1>Sign → text</h1>
-        <p className="muted">Camera frames stay in your browser. Hand and pose tracking run continuously; signs are added to the sentence below as they're confirmed.</p>
+        <p className="muted">Sign in front of the camera. Confirmed signs build your sentence.</p>
 
         {modelMissing && (
           <div className="model-missing-banner">
@@ -409,70 +409,76 @@ export default function TranslatePage() {
           </div>
         )}
 
-        <div className="camera">
-          <video ref={video} playsInline muted />
-          <canvas ref={canvas} className="overlay" />
-          <div className={`live-pill ${running ? "live-pill-on" : ""}`}>
-            <span className="live-dot" />
-            {state}
-          </div>
-          {running && modelReady && (
-            <div className="buffer-ring">
-              <svg viewBox="0 0 40 40">
-                <circle cx="20" cy="20" r="17" className="ring-track" />
-                <circle
-                  cx="20" cy="20" r="17" className="ring-fill"
-                  style={{ strokeDashoffset: 107 - 107 * bufferFill }}
-                />
-              </svg>
+        <div className="translate-workspace">
+          <div className="translate-left">
+            <div className="camera">
+              <video ref={video} playsInline muted />
+              <canvas ref={canvas} className="overlay" />
+              <div className={`live-pill ${running ? "live-pill-on" : ""}`}>
+                <span className="live-dot" />
+                {state}
+              </div>
+              {running && modelReady && (
+                <div className="buffer-ring">
+                  <svg viewBox="0 0 40 40">
+                    <circle cx="20" cy="20" r="17" className="ring-track" />
+                    <circle
+                      cx="20" cy="20" r="17" className="ring-fill"
+                      style={{ strokeDashoffset: 107 - 107 * bufferFill }}
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {running && modelReady && (
-          <div className="confidence-bar-track">
-            <div className="confidence-bar-fill" style={{ width: `${Math.min(100, liveConfidence * 100)}%` }} />
-          </div>
-        )}
+            {running && modelReady && (
+              <div className="confidence-bar-track">
+                <div className="confidence-bar-fill" style={{ width: `${Math.min(100, liveConfidence * 100)}%` }} />
+              </div>
+            )}
 
-        <div className="actions">
-          {running ? (
-            <button onClick={stop}>Stop camera</button>
-          ) : (
-            <button onClick={start} disabled={!trackingReady}>
-              {trackingReady ? "Start camera" : "Loading…"}
-            </button>
-          )}
-        </div>
-
-        <div className="transcript-panel">
-          <div className="transcript-header">
-            <span className="eyebrow">SENTENCE</span>
-            <div className="transcript-actions">
-              <button className="btn-ghost-sm" onClick={() => pushChip(" ", "space")}>Add space</button>
-              <button className="btn-ghost-sm" onClick={() => setTranscript(prev => prev.slice(0, -1))}>Backspace</button>
-              <button className="btn-ghost-sm" onClick={() => setTranscript([])}>Clear</button>
-              <button className="btn-ghost-sm" onClick={() => navigator.clipboard?.writeText(sentence)}>Copy</button>
+            <div className="actions">
+              {running ? (
+                <button onClick={stop}>Stop camera</button>
+              ) : (
+                <button onClick={start} disabled={!trackingReady}>
+                  {trackingReady ? "Start camera" : "Loading…"}
+                </button>
+              )}
             </div>
           </div>
-          <div className="transcript-chips" dir="rtl">
-            {transcript.length === 0 && <span className="transcript-empty">Signs will appear here as they're recognized…</span>}
-            {transcript.map(chip => (
-              <span key={chip.id} className={`chip chip-in ${chip.kind === "space" ? "chip-space" : ""}`}>
-                {chip.kind === "space" ? "␣" : chip.text}
-              </span>
-            ))}
-            {running && modelReady && <span className="cursor-blink" />}
+
+          <div className="translate-right">
+            <div className="transcript-panel">
+              <div className="transcript-header">
+                <span className="eyebrow">SENTENCE</span>
+                <div className="transcript-actions">
+                  <button className="btn-ghost-sm" onClick={() => pushChip(" ", "space")}>Add space</button>
+                  <button className="btn-ghost-sm" onClick={() => setTranscript(prev => prev.slice(0, -1))}>Backspace</button>
+                  <button className="btn-ghost-sm" onClick={() => setTranscript([])}>Clear</button>
+                  <button className="btn-ghost-sm" onClick={() => navigator.clipboard?.writeText(sentence)}>Copy</button>
+                </div>
+              </div>
+              <div className="transcript-chips" dir="rtl">
+                {transcript.length === 0 && <span className="transcript-empty">Signs appear here as they're recognized.</span>}
+                {transcript.map(chip => (
+                  <span key={chip.id} className={`chip chip-in ${chip.kind === "space" ? "chip-space" : ""}`}>
+                    {chip.kind === "space" ? "␣" : chip.text}
+                  </span>
+                ))}
+                {running && modelReady && <span className="cursor-blink" />}
+              </div>
+            </div>
+
+            {lastPrediction && (
+              <div className="result">
+                <span className="arabic">{lastPrediction.predictedSign}</span>
+                <strong>{(lastPrediction.confidence * 100).toFixed(1)}%</strong>
+                <small>{lastPrediction.topPredictions.slice(1).map(p => `${p.sign} ${(p.confidence * 100).toFixed(1)}%`).join(" · ")}</small>
+              </div>
+            )}
           </div>
         </div>
-
-        {lastPrediction && (
-          <div className="result">
-            <span className="arabic">{lastPrediction.predictedSign}</span>
-            <strong>{(lastPrediction.confidence * 100).toFixed(1)}%</strong>
-            <small>{lastPrediction.topPredictions.slice(1).map(p => `${p.sign} ${(p.confidence * 100).toFixed(1)}%`).join(" · ")}</small>
-          </div>
-        )}
       </section>
     </main>
   );

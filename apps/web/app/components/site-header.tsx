@@ -9,8 +9,8 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <Link href="/" className="site-brand">
-        <span className="logo-mark" aria-hidden="true"><i /> <b>i</b></span>
-        <span><span className="brand-name">ISHARA</span><br /><span className="brand-sub">Algerian Sign Language</span></span>
+        <img className="logo-mark" src="/logo.png" alt="ISHARA" />
+        <span className="brand-name">ISHARA</span>
       </Link>
       <nav className="site-nav" aria-label="Main navigation">
         <Link href="/dictionary">Dictionary</Link>
